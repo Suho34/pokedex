@@ -17,5 +17,5 @@
     "noEmit": true,
     "types": []
   },
-  "include": ["core/**/*.ts", "shared/**/*.ts", "tests/**/*.ts"]
+  "include": ["core/**/*.ts", "shared/**/*.ts", "tests/**/*.ts", "types"]
 }

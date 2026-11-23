@@ -1,60 +1,44 @@
-# Resume improvement
+# Resume Intelligence
 
-Rewrite or tailor a resume using only facts the user supplied, aimed at one
-target role.
+Turns a resume into either a diagnosis or a rewritten document, using only facts
+the user supplied.
 
-## Use when
+## Intents
 
-The user asks to review, fix, rewrite or tailor a resume or CV, or asks why
-applications are not converting. Interview rehearsal belongs to job preparation.
+| Intent                                          | Workflow             | Load                                                     |
+| ----------------------------------------------- | -------------------- | -------------------------------------------------------- |
+| "What is weak?", "why no calls?", feedback only | `resume.analysis`    | `workflows/analysis.md` + `references/methodology.md`    |
+| Rewrite, tighten, tailor to a posting           | `resume.improvement` | `workflows/improvement.md` + `references/methodology.md` |
 
-## Inputs
+## The separation that matters
 
-- the current resume text (ask for it verbatim; do not work from memory of it)
-- the target role, and the job description when tailoring
-- the profile, for facts missing from the resume
-- page limit and market conventions, if the user has them
+`resume.analysis` never rewrites a line and `resume.improvement` never invents
+one. Analysis produces findings and fix directions; improvement applies them with
+the user's real facts and a changelog.
 
-If the resume is unavailable, ask for it before rewriting. Do not reconstruct it
-from the profile.
+"Make my resume better" routes to analysis first: the facts are read before
+anything is edited, and the analysis ends by offering the improvement pass.
 
-## Workflow
+## Required inputs
 
-1. **Extract facts.** Build a list of roles, dates, technologies and outcomes
-   exactly as written. Note every bullet with no outcome and every claim with no
-   evidence.
-2. **Read the target.** For a job description, list its requirements in the order
-   the posting emphasises them. Without one, use the role conventions from
-   `references/methodology.md`.
-3. **Map evidence to requirements.** For each requirement: which existing fact
-   proves it, weakly or strongly, or nothing does.
-4. **Rewrite bullets.** Use verb + scope + mechanism + outcome, with numbers only
-   where the user supplied them. Keep one line per bullet where possible.
-5. **Reorder and trim.** Most relevant section first; cut content that proves
-   nothing for this target. Respect the page limit.
-6. **Report gaps.** List requirements nothing proves, and the cheapest way to
-   earn each — this list feeds career planning.
+| Workflow             | Cannot run without                                                         |
+| -------------------- | -------------------------------------------------------------------------- |
+| `resume.analysis`    | the resume text, verbatim                                                  |
+| `resume.improvement` | the resume text, verbatim, plus the target role (a posting when tailoring) |
 
-## Deliverable
+If the resume is unavailable, ask for it. Never reconstruct it from the profile.
 
-1. The revised resume, section by section, in plain text ready to paste.
-2. A changelog: what changed, why, and which requirement each change serves.
-3. A gap list: unproven requirements with a suggested artifact for each.
-4. Notes on formatting risk (columns, tables, graphics, file type) for the
-   applicant tracking system in use, when known.
+## Rules
 
-## Quality bar
+- Nothing appears in the output that the user did not state. Missing numbers stay
+  visible as `[add number]` with what to measure.
+- No technology is listed without supporting evidence in a role, project or
+  course.
+- Every finding names the line or section it refers to, and a severity.
+- Gaps found here are the input to `career.planning`; say so rather than
+  inventing experience to fill them.
 
-- Nothing appears in the output that the user did not state or that is not a
-  restatement of something they stated.
-- Missing numbers stay visible as `[add number]` rather than being invented or
-  quietly dropped.
-- No technology is listed that has no supporting project, role or course.
-- Length and section order follow the target market, not personal preference.
-- "Improved performance" style bullets are rewritten to name the mechanism or
-  removed.
+## Not this domain
 
-## Out of scope
-
-Cover letters, portfolio site design, and salary discussion. Offer the relevant
-module instead.
+Interview rehearsal (`career.job-preparation`), career direction
+(`career.planning`), cover letters, portfolio design and salary negotiation.
