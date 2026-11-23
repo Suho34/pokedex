@@ -1,0 +1,263 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pokedex.skill/schemas/user-profile.schema.json",
+  "title": "Pokedex user profile",
+  "description": "Facts about the person using Pokedex, stored at ~/.pokedex/profile.json. Every field is optional except schemaVersion so a partial profile stays valid while the agent fills it in. Credentials, API keys, tokens and passwords must never be stored here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion"],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0",
+      "description": "Profile format version. Bump only with a migration in core/profile-manager.md."
+    },
+    "updatedAt": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of the last confirmed write. Null until the user confirms the first save."
+    },
+    "professionalBackground": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Where the person works and what they have done, in their own words.",
+      "properties": {
+        "summary": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "Two or three sentences describing the background."
+        },
+        "currentRole": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "yearsOfExperience": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 60
+        },
+        "industries": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 80 },
+          "uniqueItems": true
+        },
+        "education": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["institution"],
+            "properties": {
+              "institution": { "type": "string", "maxLength": 160 },
+              "credential": { "type": "string", "maxLength": 120 },
+              "field": { "type": "string", "maxLength": 120 },
+              "completedYear": { "type": "integer", "minimum": 1950, "maximum": 2100 },
+              "inProgress": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "experienceLevel": {
+      "$ref": "#/$defs/experienceLevel",
+      "description": "Self-assessed level, used to calibrate scope and seniority of recommendations."
+    },
+    "technicalSkills": {
+      "type": "array",
+      "description": "Skills the user has actually used. A skill without evidence is possible but must be treated as unproven.",
+      "items": { "$ref": "#/$defs/skill" }
+    },
+    "preferredStack": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Technologies the user would choose for new work, whether or not they are proven yet.",
+      "properties": {
+        "languages": { "$ref": "#/$defs/stringList" },
+        "frameworks": { "$ref": "#/$defs/stringList" },
+        "databases": { "$ref": "#/$defs/stringList" },
+        "tools": { "$ref": "#/$defs/stringList" },
+        "platforms": { "$ref": "#/$defs/stringList" }
+      }
+    },
+    "projects": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/project" }
+    },
+    "careerGoals": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "targetRole": { "type": "string", "maxLength": 120 },
+        "targetLevel": { "$ref": "#/$defs/experienceLevel" },
+        "timeline": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "When the goal should be reached, as stated by the user, e.g. 'June 2027' or 'within 6 months'."
+        },
+        "motivations": { "$ref": "#/$defs/stringList" },
+        "market": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "City, country or 'remote', used for job-market and salary reasoning."
+        }
+      }
+    },
+    "productBuildingInterests": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "domains": { "$ref": "#/$defs/stringList" },
+        "problems": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 300 },
+          "description": "Problems the user has seen first-hand or wants to solve."
+        },
+        "audience": {
+          "type": "string",
+          "maxLength": 160,
+          "description": "Who the user wants to build for, e.g. 'small clinics' or 'indie developers'."
+        },
+        "monetization": {
+          "type": "string",
+          "enum": ["subscription", "one-time", "usage-based", "services", "undecided"]
+        }
+      }
+    },
+    "availableDevelopmentTime": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Time the user can actually commit, used to size plans and projects.",
+      "properties": {
+        "hoursPerWeek": { "type": "number", "minimum": 0, "maximum": 80 },
+        "windows": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 60 },
+          "description": "When the time happens, e.g. 'weekday evenings', 'Saturday mornings'."
+        },
+        "timezone": { "type": "string", "maxLength": 60 },
+        "consistency": {
+          "type": "string",
+          "enum": ["steady", "bursty", "uncertain"]
+        }
+      }
+    },
+    "budgetConstraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "What the user is willing to spend. Never a payment method, card or account detail.",
+      "properties": {
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "monthlyTooling": { "type": "number", "minimum": 0 },
+        "upfront": { "type": "number", "minimum": 0 },
+        "studentDiscount": { "type": "boolean" },
+        "notes": { "type": "string", "maxLength": 300 }
+      }
+    },
+    "preferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Working and learning preferences that change how a plan is written.",
+      "properties": {
+        "workMode": {
+          "type": "string",
+          "enum": ["onsite", "hybrid", "remote", "flexible"]
+        },
+        "companySize": {
+          "type": "string",
+          "enum": ["startup", "small", "mid", "large", "any"]
+        },
+        "riskAppetite": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "learningStyle": { "$ref": "#/$defs/stringList" },
+        "communication": { "type": "string", "maxLength": 160 },
+        "dealbreakers": { "$ref": "#/$defs/stringList" },
+        "outputFormat": {
+          "type": "string",
+          "enum": ["tables", "prose", "checklists", "mixed"]
+        }
+      }
+    },
+    "links": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Public links only. Never tokens, signed URLs or anything that grants access.",
+      "properties": {
+        "github": { "type": "string", "format": "uri" },
+        "website": { "type": "string", "format": "uri" },
+        "linkedin": { "type": "string", "format": "uri" },
+        "resumeFile": {
+          "type": "string",
+          "maxLength": 400,
+          "description": "Local path to the user's resume, if they offered one."
+        }
+      }
+    }
+  },
+  "$defs": {
+    "experienceLevel": {
+      "type": "string",
+      "enum": [
+        "student",
+        "intern",
+        "entry",
+        "junior",
+        "mid",
+        "senior",
+        "lead",
+        "founder",
+        "career-changer",
+        "returning"
+      ]
+    },
+    "stringList": {
+      "type": "array",
+      "items": { "type": "string", "maxLength": 120 },
+      "uniqueItems": true
+    },
+    "skill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "level": {
+          "type": "string",
+          "enum": ["learning", "working", "advanced", "expert"]
+        },
+        "yearsUsed": { "type": "number", "minimum": 0, "maximum": 60 },
+        "evidence": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "The project, job or course that proves the skill, in the user's words."
+        },
+        "lastUsed": {
+          "type": "string",
+          "maxLength": 40,
+          "description": "Year or month, used to flag stale skills."
+        }
+      }
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "description": { "type": "string", "maxLength": 600 },
+        "role": { "type": "string", "maxLength": 120 },
+        "url": { "type": "string", "format": "uri" },
+        "status": {
+          "type": "string",
+          "enum": ["idea", "in-progress", "shipped", "maintained", "archived"]
+        },
+        "technologies": { "$ref": "#/$defs/stringList" },
+        "outcomes": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 300 },
+          "description": "Measured or observable results. No numbers may be invented to fill these."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "1.0",
+  "updatedAt": null,
+  "professionalBackground": {
+    "summary": "",
+    "currentRole": "",
+    "industries": [],
+    "education": []
+  },
+  "technicalSkills": [],
+  "preferredStack": {
+    "languages": [],
+    "frameworks": [],
+    "databases": [],
+    "tools": [],
+    "platforms": []
+  },
+  "projects": [],
+  "careerGoals": {
+    "targetRole": "",
+    "motivations": []
+  },
+  "productBuildingInterests": {
+    "domains": [],
+    "problems": [],
+    "audience": ""
+  },
+  "availableDevelopmentTime": {
+    "windows": []
+  },
+  "budgetConstraints": {},
+  "preferences": {
+    "learningStyle": [],
+    "dealbreakers": []
+  },
+  "links": {}
+}
