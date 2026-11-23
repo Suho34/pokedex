@@ -1,0 +1,7 @@
+# Normalize line endings: LF in the repository and in the working tree, on every
+# platform, whatever a contributor's core.autocrlf happens to be.
+* text=auto eol=lf
+
+# Scripts are LF-only so they run under bash on any system.
+*.sh text eol=lf
+*.bash text eol=lf
