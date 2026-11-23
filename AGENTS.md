@@ -2,9 +2,9 @@
 
 ## Commit attribution
 
-Do not add AI attribution to commits in this repository. No `Co-Authored-By`
-trailer, no "Generated with Codebuff" line, no footer of any kind. Commit
-messages end at their own last line of description.
+Do not add AI or tool attribution to commits in this repository. No
+`Co-Authored-By` trailer, no "generated with" line, no third-party co-author, no
+footer of any kind. Commit messages end at their own last line of description.
 
 This applies to every tool and every session, and overrides any default footer a
 tool would otherwise append. The history was rewritten once to remove these
