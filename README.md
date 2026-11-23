@@ -1,67 +1,105 @@
 # Pokedex
 
 A portable, modular Agent Skill for people who build software. It turns a real
-background into a deliverable: a product idea worth testing, a career plan with
-dates, a stronger resume, or a prepared application.
+background into a deliverable: a product idea worth testing, a verdict on an
+existing idea, a career plan with dates, a prepared application, or a stronger
+resume.
 
 This is not an app, a service or a database. It is a folder of instructions and
 methodology in the [Agent Skills](https://agentskills.io/specification) format,
 which agents such as Codex, Claude Code and Antigravity load on demand.
 
-## Capabilities
+## Domains and workflows
 
-| Request                              | Capability         | Deliverable                                                            |
-| ------------------------------------ | ------------------ | ---------------------------------------------------------------------- |
-| "What should I build?"               | Idea discovery     | Scored candidate ideas, one recommendation, a two-week validation test |
-| "Where should my career go?"         | Career planning    | Target role, gap table, dated plan with proof artifacts                |
-| "Fix my resume"                      | Resume improvement | Rewritten resume, changelog, gap list, ATS notes                       |
-| "Help me prepare for this interview" | Job preparation    | Competency matrix, answer skeletons, dated drill plan                  |
+Three domains, six workflows. The router loads only the workflow a request needs.
 
-One skill, four internal capabilities. `SKILL.md` routes each request to the
-single module that owns it; nothing is split into separate skills and no
-sub-agents are involved.
+| Domain               | Workflow                 | Request                                 | Deliverable                                                       |
+| -------------------- | ------------------------ | --------------------------------------- | ----------------------------------------------------------------- |
+| Product Intelligence | `product.discovery`      | "What should I build?"                  | Scored candidates, one recommendation, a two-week validation test |
+| Product Intelligence | `product.evaluation`     | "Is this idea worth building?"          | Verdict (`proceed`/`narrow`/`stop`), scores, cheapest next test   |
+| Career Intelligence  | `career.planning`        | "Where should my career go?"            | Target role, gap table, dated plan with proof artifacts           |
+| Career Intelligence  | `career.job-preparation` | "Prep me for this internship interview" | Competency matrix, answer skeletons, dated drill plan             |
+| Resume Intelligence  | `resume.analysis`        | "What's weak in my resume?"             | Findings table, requirement gaps, top five fixes (no edits)       |
+| Resume Intelligence  | `resume.improvement`     | "Rewrite my resume for this role"       | Rewritten resume, changelog, gap list, ATS notes                  |
+
+One skill, three domains. Routing is semantic, done by the host model from
+`core/intent-router.md` — there is no keyword-matching engine. A request that
+names two deliverables gets two workflows, executed in dependency order; nothing
+else is loaded.
 
 ## How it works
 
-`SKILL.md` carries the frontmatter an agent needs to decide whether the skill
-applies (`name`, `description`), the routing table, the profile rules and the
-evidence rules. Each capability lives in `domains/<capability>/` with a `README.md`
-(trigger, inputs, workflow, deliverable, quality bar) and a
-`references/methodology.md` the agent reads only when it needs the detail.
-
 ```
 pokedex/
-  SKILL.md                  routing, profile rules, evidence rules, output standards
-  domains/                  one folder per capability
-    idea-discovery/
-    career-planning/
-    resume/
-    job-prep/
-  core/                     frontmatter parser and document validator
-  shared/                   Zod schema and spec constants
+  SKILL.md                  entry point: routing summary, evidence rules, standards
+  core/
+    intent-router.md        request -> workflow mapping, ambiguity and multi-domain rules
+    execution-protocol.md   how a routed workflow is run, reviewed and returned
+    profile-manager.md      profile read, ask and update protocol
+    skill.ts                frontmatter parser and document validator
+  domains/
+    product/                Product Intelligence
+      README.md
+      workflows/            discovery.md, evaluation.md
+      references/           methodology.md
+    career/                 Career Intelligence
+      README.md
+      workflows/            planning.md, job-preparation.md
+      references/           planning-methodology.md, job-preparation-methodology.md
+    resume/                 Resume Intelligence
+      README.md
+      workflows/            analysis.md, improvement.md
+      references/           methodology.md
+  shared/
+    domain-catalog.ts       the routable domains and workflow ids
+    skill-manifest.ts       Zod schema and spec constants
+    schemas/user-profile.schema.json
+    templates/profile-template.json
   scripts/                  pnpm validate
-  tests/                    Vitest suites
+  tests/                    Vitest suites, including the routing fixture
   docs/architecture.md
 ```
 
+`shared/domain-catalog.ts` is the machine-readable list of what can be routed;
+`tests/routing/cases.ts` holds simple, ambiguous and multi-domain prompts with
+the workflows each must select.
+
 ## The profile
 
-Pokedex works from facts. It looks for `.pokedex/profile.md` in the working
-directory, then in the home directory, then for a profile pasted in the
-conversation. Anything it does not know is either asked for or marked as an
-assumption — it never invents experience, skills or achievements.
+Pokedex works from facts. The profile is a plain JSON file the user owns, looked
+up at `./.pokedex/profile.json` in the working directory, then
+`~/.pokedex/profile.json`, then a path the user names or a profile pasted in the
+conversation. No database, no account, no synchronization.
 
-```markdown
-# Profile
+It records professional background, experience level, technical skills with the
+evidence for each, preferred stack, existing projects, career goals,
+product-building interests, available development time, budget constraints and
+preferences. Every field except `schemaVersion` is optional, so a partial profile
+stays valid while it is filled in.
 
-- Target: <role> by <date>
-- Location / authorisation: <city or remote, status>
-- Current role: <title> at <employer>, <dates>
-- Skills: <skill> — proven by <project>
-- Projects: <name> — <outcome>
-- Constraints: <hours per week, budget, notice period>
-- Links: <github, site>
+```json
+{
+  "schemaVersion": "1.0",
+  "technicalSkills": [
+    {
+      "name": "TypeScript",
+      "level": "advanced",
+      "evidence": "checkout rewrite at Acme"
+    }
+  ],
+  "availableDevelopmentTime": { "hoursPerWeek": 6 },
+  "budgetConstraints": { "currency": "GBP", "monthlyTooling": 20 }
+}
 ```
+
+Shape: `shared/schemas/user-profile.schema.json`. Starter file:
+`shared/templates/profile-template.json`. Behavior — essentials per workflow, the
+asking rules, the update protocol and the privacy rules:
+`core/profile-manager.md`.
+
+Three rules the skill never breaks: it does not store passwords, API keys or
+credentials; it does not silently overwrite an existing profile; and it does not
+write inferences into the file.
 
 See [docs/architecture.md](docs/architecture.md) for the layering and
 [domains/README.md](domains/README.md) for the domain contract.
@@ -93,7 +131,7 @@ Requires Node 24+ and pnpm 12.
 ```bash
 pnpm install
 pnpm typecheck      # tsc --noEmit over core/, shared/, tests/
-pnpm test           # Vitest
+pnpm test           # Vitest: parser, routing fixtures, catalog paths on disk
 pnpm validate       # validates the real SKILL.md against the spec
 pnpm format:check   # Prettier
 ```
@@ -103,9 +141,13 @@ through Node's type stripping, so no build step is involved.
 
 ## Editing the skill
 
-- Change routing, profile rules or output standards in `SKILL.md`.
-- Change a method inside its own `domains/<capability>/` folder.
-- Add a capability following [domains/README.md](domains/README.md).
+- Change routing, profile rules or output standards in `SKILL.md` and
+  `core/intent-router.md`.
+- Change a method inside its own workflow file under `domains/<domain>/workflows/`.
+- Change profile behavior in `core/profile-manager.md` and its shape in
+  `shared/schemas/user-profile.schema.json` together.
+- Add a workflow by following [domains/README.md](domains/README.md) — catalog,
+  workflow file, README row and routing case together.
 - After any edit, run `pnpm format`, `pnpm test` and `pnpm validate`.
 
 ## License

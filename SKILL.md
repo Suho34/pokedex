@@ -1,88 +1,61 @@
 ---
 name: pokedex
-description: Turns a person's real background into practical career and product deliverables — product and SaaS idea discovery, career planning, resume improvement, and job or internship preparation. Use when the user wants product or business ideas that fit their skills, asks for career direction, skill gaps or a plan, wants a resume or CV reviewed, rewritten or tailored, or is preparing for a job, internship or interview.
+description: Turns a person's real background into practical career and product deliverables — product discovery and product idea evaluation, career planning, job preparation, and resume analysis or improvement. Use when the user wants product or SaaS ideas that fit their skills, wants an existing idea assessed, asks for career direction, skill gaps or a plan, is preparing for a job, internship or interview, or wants a resume reviewed, rewritten or tailored.
 license: MIT
 metadata:
-  version: '0.2.0'
+  version: '0.4.0'
 ---
 
 # Pokedex
 
 Pokedex is a career and product skill for people who build software. It takes what
 a person has actually done and turns it into a deliverable they can act on: a
-product idea worth testing, a career plan with dates, a stronger resume, or a
-prepared application.
+product idea worth testing, a verdict on an idea they already have, a career plan
+with dates, a prepared application, or a stronger resume.
 
 Pokedex is not a chatbot persona and not a motivational coach. It does not hand
 back lists of generic advice. Every output is either built from the user's own
 recorded background or explicitly marked as an assumption to confirm.
 
-## Invocation flow
+## How a request is handled
 
-Every invocation follows the same seven steps:
+1. **Route it** — `core/intent-router.md` decides which workflow owns the request,
+   whether to ask a question first, and whether a second deliverable is named.
+2. **Load only what the route names** — a domain `README.md`, the workflow file,
+   and the reference that workflow points at. Nothing else from `domains/`.
+3. **Run it** — `core/execution-protocol.md`: check the inputs, execute the
+   workflow, review, return one deliverable per routed workflow.
+4. **Personalise it** — `core/profile-manager.md` governs reading, asking about
+   and writing the user's profile.
 
-1. **Understand the request.** Restate what the user wants and what they will do
-   with the result, in one sentence, before doing any work.
-2. **Identify the capability.** Match the request to one primary capability in
-   the table below.
-3. **Load the relevant instructions.** Read the capability's `README.md`, then
-   only the reference files it names.
-4. **Gather necessary context.** Read the profile (see below). Ask only for the
-   fields the chosen capability cannot work without.
-5. **Execute the task.** Follow the capability's workflow and produce its stated
-   deliverable.
-6. **Review the result.** Run the review checklist before returning anything.
-7. **Return a useful output.** A deliverable the user can act on today, with the
-   next action named.
-
-## Capability routing
-
-| Request looks like                                                               | Capability         | Module                     |
-| -------------------------------------------------------------------------------- | ------------------ | -------------------------- |
-| "what should I build", SaaS or product idea, side project, monetising a skill    | Idea discovery     | `domains/idea-discovery/`  |
-| career direction, skill gaps, promotion, pivot, "where should I be in two years" | Career planning    | `domains/career-planning/` |
-| resume or CV review, rewrite, tailoring, ATS                                     | Resume improvement | `domains/resume/`          |
-| interview or internship preparation, applications, take-homes, job search        | Job preparation    | `domains/job-prep/`        |
-
-Rules:
-
-- **One primary capability per request.** Pick the one that owns the final
-  deliverable, and do not load all four.
-- **A second capability only when the request names it.** "Rewrite my resume for
-  this internship" is resume work with a job-preparation detail; "fix my resume
-  and prepare me for the interview" is two deliverables, produced in order.
-- **A request that matches none of them is out of scope.** Say so in one line and
-  offer the closest capability instead of stretching a methodology.
-- **Unclear requests:** ask one question that separates the candidates, for
-  example "do you want a plan, or a revised resume?"
+Three domains: Product Intelligence (discovery, evaluation), Career Intelligence
+(planning, job preparation), Resume Intelligence (analysis, improvement). The
+routing table, load budget, ambiguity rules and composition limits are in
+`core/intent-router.md`; it is the single source of truth for routing.
+`shared/domain-catalog.ts` is the machine-readable list of the same workflows.
 
 ## The user's profile
 
-Pokedex works from facts, so look for a profile before asking anything:
+Look for it before asking anything: `./.pokedex/profile.json` in the working
+directory, then `~/.pokedex/profile.json`, then a path the user names or a profile
+they pasted in the conversation.
 
-1. `.pokedex/profile.md` in the working directory.
-2. `.pokedex/profile.md` in the user's home directory.
-3. A profile the user pasted earlier in the conversation.
+The profile records professional background, experience level, skills with their
+evidence, preferred stack, projects, career goals, product-building interests,
+available development time, budget constraints and preferences. Profiles are
+allowed to be partial: never block a task because a field is empty. Read
+`core/profile-manager.md` before reading, asking about or writing it.
 
-When a profile exists, use it and do not re-ask what it already answers. When it
-is missing, ask only the fields the chosen capability requires — usually three to
-six questions in one message — then do the work. Afterwards, offer to save what
-you learned as `.pokedex/profile.md`: ask before writing, and never store guesses
-in it.
-
-Useful profile fields: target role or outcome, timeline, location and work
-authorisation, current role with dates, technical skills each tied to the project
-that proves them, projects and their outcomes, education, constraints (hours per
-week, budget, notice period), and links.
+Storage rules: never store passwords, API keys, tokens or credentials; never
+silently overwrite an existing profile — propose the exact change, get a
+confirmation, then merge; never write an inference into the file.
 
 ## Evidence rules
-
-Hard rules, not preferences:
 
 - **Never invent experience, skills, achievements, metrics or employers.** When a
   number is needed and the user has not given one, write `[add number]` and say
   what to measure.
-- **Every personal claim traces to the profile, the resume text or the
+- **Every personal claim traces to the profile, an attachment or the
   conversation.** If it traces to none of them, it is a question, not a sentence.
 - **Mark inferences.** Anything not stated by the user is labelled
   `Assumption — confirm:`.
@@ -90,8 +63,8 @@ Hard rules, not preferences:
   rate-limited API with Redis, load-test it at 500 rps, and put the numbers in
   your resume" is. Each recommendation names an artifact, a time box, and how it
   gets proven.
-- **No outcome promises.** Do not claim a plan "will get you hired". State what
-  the work improves and how the user can tell it improved.
+- **No outcome promises.** State what the work improves and how the user can tell
+  it improved, never what it guarantees.
 
 ## Deliverable standards
 
@@ -104,23 +77,24 @@ Hard rules, not preferences:
 
 ## Review before returning
 
-Check every output against these and fix what fails:
-
 - Does it answer the question that was asked, in the order it was asked?
-- Is every personal fact traceable to the profile, resume or conversation?
+- Is every personal fact traceable to the profile, an attachment or the
+  conversation?
 - Is every recommendation specific enough to act on this week?
 - Would the user know what to do next after reading it?
 - Is any of it padding, encouragement or a disclaimer?
 
 ## Structure
 
-- `SKILL.md` — routing, profile rules, evidence rules, output standards.
-- `domains/` — one folder per capability: `idea-discovery`, `career-planning`,
-  `resume`, `job-prep`. Each has a `README.md` (trigger, inputs, workflow,
-  deliverable) and a `references/methodology.md`.
-- `core/`, `shared/`, `scripts/`, `tests/` — the SKILL.md validator and its tests.
+- `SKILL.md` — this file: purpose, profile rules, evidence rules, standards.
+- `core/intent-router.md` — routing table, ambiguity and composition rules.
+- `core/execution-protocol.md` — inputs, execution, review gates, output shape.
+- `core/profile-manager.md` — profile storage, essentials, ask and update rules.
+- `domains/` — three domains: `README.md`, `workflows/`, `references/`.
+- `shared/`, `core/skill.ts`, `scripts/`, `tests/` — catalog, schemas, validator,
+  tests.
 - `docs/` — architecture notes for maintainers.
 
-Pokedex is one skill with four internal capabilities. Do not fork it into
-separate skills, and do not hand the work to sub-agents: the capability modules
-are instructions to follow, not agents to call.
+Pokedex is one skill with three domains and six workflows. Do not fork it into
+separate skills, and do not hand work to sub-agents: workflows are instructions
+to follow, not agents to call.
